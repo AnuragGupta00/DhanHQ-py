@@ -1,6 +1,4 @@
-
 class Funds:
-
     def __init__(self, dhan_context):
         self.dhan_http = dhan_context.get_dhan_http()
 
@@ -11,11 +9,19 @@ class Funds:
         Returns:
             dict: The response containing fund limits data.
         """
-        endpoint = '/fundlimit'
+        endpoint = "/fundlimit"
         return self.dhan_http.get(endpoint)
 
-    def margin_calculator(self, security_id, exchange_segment, transaction_type, quantity,
-                          product_type, price, trigger_price=0):
+    def margin_calculator(
+        self,
+        security_id,
+        exchange_segment,
+        transaction_type,
+        quantity,
+        product_type,
+        price,
+        trigger_price=0,
+    ):
         """
         Calculate the margin required for a trade based on the provided parameters.
 
@@ -31,14 +37,14 @@ class Funds:
         Returns:
             dict: The response containing the margin calculation result.
         """
-        endpoint = '/margincalculator'
+        endpoint = "/margincalculator"
         payload = {
             "securityId": security_id,
             "exchangeSegment": exchange_segment.upper(),
             "transactionType": transaction_type.upper(),
             "quantity": int(quantity),
             "productType": product_type.upper(),
-            "price": float(price)
+            "price": float(price),
         }
         
         if trigger_price >= 0:
@@ -46,25 +52,48 @@ class Funds:
 
         return self.dhan_http.post(endpoint, payload)
 
-    def margin_calculator_multi(self, scrip_list, include_position=False, include_order=False):
+    # def margin_calculator_multi(self, scrip_list, include_position=False, include_order=False):
+    #     """
+    #     Calculate the combined margin required for multiple orders, with hedge benefits.
+
+    #     Args:
+    #         scrip_list (list): List of order/leg dicts. Each item keys (camelCase):
+    #             exchangeSegment, transactionType (BUY/SELL), quantity, productType
+    #             (CNC / INTRADAY / MARGIN / MTF), securityId, price, triggerPrice.
+    #         include_position (bool): Include existing positions in the calculation. Defaults to False.
+    #         include_order (bool): Include pending orders in the calculation. Defaults to False.
+
+    #     Returns:
+    #         dict: The response containing the combined margin calculation result.
+    #     """
+    #     endpoint = '/margincalculator/multi'
+    #     payload = {
+    #         "includePosition": include_position,
+    #         "includeOrder": include_order,
+    #         "scripList": scrip_list
+    #     }
+    #     return self.dhan_http.post(endpoint, payload)
+
+    def margin_calculator_multi(
+        self, scrip_list, include_position=True, include_orders=True
+    ):
         """
-        Calculate the combined margin required for multiple orders, with hedge benefits.
+        Calculate combined margin for multiple orders in a single request.
+        Accounts for hedge/SPAN netting benefits across legs and existing positions.
 
         Args:
-            scrip_list (list): List of order/leg dicts. Each item keys (camelCase):
-                exchangeSegment, transactionType (BUY/SELL), quantity, productType
-                (CNC / INTRADAY / MARGIN / MTF), securityId, price, triggerPrice.
-            include_position (bool): Include existing positions in the calculation. Defaults to False.
-            include_order (bool): Include pending orders in the calculation. Defaults to False.
+            scrip_list (list[dict]): List of order dicts, each with keys:
+                exchangeSegment, transactionType, quantity, productType, securityId, price, triggerPrice
+            include_position (bool): Include existing open positions in margin calculation.
+            include_orders (bool): Include pending open orders in margin calculation.
 
         Returns:
-            dict: The response containing the combined margin calculation result.
+            dict: Response with total_margin, span_margin, exposure_margin, hedge_benefit, etc.
         """
-        endpoint = '/margincalculator/multi'
+        endpoint = "/margincalculator/multi"
         payload = {
             "includePosition": include_position,
-            "includeOrder": include_order,
-            "scripList": scrip_list
+            "includeOrders": include_orders,
+            "scripList": scrip_list,
         }
         return self.dhan_http.post(endpoint, payload)
-
